@@ -33,6 +33,9 @@ jobs:
       - name: Lint with ruff
         run: uv run --directory py ruff check --select I .
 
+      - name: Static type checks
+        run: uv run --directory py mypy .
+
       - name: Check licenses
         run: ./bin/check_license
 

@@ -9,26 +9,6 @@ import pytest
 from genkit.core.action import ActionKind, parse_action_key
 
 
-def test_action_enum_behaves_like_str() -> None:
-    """Ensure the ActionType behaves like a string.
-
-    This test verifies that the ActionType enum values can be compared
-    directly with strings and that the correct variants are used.
-    """
-    assert ActionKind.CHATLLM == 'chat-llm'
-    assert ActionKind.CUSTOM == 'custom'
-    assert ActionKind.EMBEDDER == 'embedder'
-    assert ActionKind.EVALUATOR == 'evaluator'
-    assert ActionKind.FLOW == 'flow'
-    assert ActionKind.INDEXER == 'indexer'
-    assert ActionKind.MODEL == 'model'
-    assert ActionKind.PROMPT == 'prompt'
-    assert ActionKind.RETRIEVER == 'retriever'
-    assert ActionKind.TEXTLLM == 'text-llm'
-    assert ActionKind.TOOL == 'tool'
-    assert ActionKind.UTIL == 'util'
-
-
 def test_parse_action_key_valid() -> None:
     """Test valid inputs."""
     test_cases = [

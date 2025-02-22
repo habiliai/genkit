@@ -135,7 +135,7 @@ class ModelConfigRemover(ast.NodeTransformer):
                 else:
                     # Update existing model_config to include
                     # populate_by_name=True
-                    new_body = []
+                    new_body: list[ast.stmt] = []
                     for item in node.body:
                         if isinstance(item, ast.Assign):
                             targets = item.targets

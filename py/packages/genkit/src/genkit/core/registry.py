@@ -33,7 +33,7 @@ class Registry:
             action names and their corresponding Action instances.
     """
 
-    def __init__(self):
+    def __init__(self) -> None:
         """Initialize an empty Registry instance."""
         self.actions: dict[ActionKind, dict[str, Action]] = {}
 

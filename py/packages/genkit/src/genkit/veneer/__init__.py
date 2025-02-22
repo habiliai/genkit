@@ -8,7 +8,8 @@ including server configuration, runtime management, and client-server
 communication protocols.
 """
 
-from genkit.veneer.veneer import Genkit, Plugin
+from genkit.core.plugin_abc import Plugin
+from genkit.veneer.veneer import Genkit
 
 __all__ = [
     'Genkit',
