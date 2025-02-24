@@ -3,20 +3,20 @@
 
 """Veneer user-facing API for application developers who use the SDK."""
 
-import logging
+import asyncio
 import os
-import threading
 from collections.abc import Callable
 from functools import wraps
-from http.server import HTTPServer
+from pathlib import Path
 from typing import Any
 
+import structlog
 from genkit.ai.embedding import EmbedRequest, EmbedResponse
 from genkit.ai.model import ModelFn
 from genkit.core.action import ActionKind
 from genkit.core.environment import is_dev_environment
 from genkit.core.plugin_abc import Plugin
-from genkit.core.reflection import make_reflection_server
+from genkit.core.reflection import make_reflection_app
 from genkit.core.registry import Registry
 from genkit.core.typing import (
     GenerateRequest,
@@ -24,13 +24,20 @@ from genkit.core.typing import (
     GenerationCommonConfig,
     Message,
 )
-from genkit.veneer import server
+from genkit.veneer.server import ServerSpec, create_runtime, run_server_uvicorn
 
-DEFAULT_REFLECTION_SERVER_SPEC = server.ServerSpec(
+# The reflection API server specification.
+DEFAULT_REFLECTION_SERVER_SPEC = ServerSpec(
     scheme='http', host='127.0.0.1', port=3100
 )
 
-logger = logging.getLogger(__name__)
+# The flow server specification.
+DEFAULT_FLOW_SERVER_SPEC = ServerSpec(
+    scheme='http', host='127.0.0.1', port=3400
+)
+
+# Default logger for the framework.
+DEFAULT_LOGGER = structlog.get_logger(__name__)
 
 
 class Genkit:
@@ -40,59 +47,105 @@ class Genkit:
         self,
         plugins: list[Plugin] | None = None,
         model: str | None = None,
+        logger: Any = DEFAULT_LOGGER,
+        working_dir: str | None = None,
         reflection_server_spec=DEFAULT_REFLECTION_SERVER_SPEC,
+        flow_server_spec=DEFAULT_FLOW_SERVER_SPEC,
     ) -> None:
         """Initialize a new Genkit instance.
 
         Args:
             plugins: Optional list of plugins to initialize.
             model: Optional model name to use.
+            logger: Optional async logger to use.
+            working_dir: Optional working directory to use; the runtime will
+                be initialized in a subdirectory of this directory.
             reflection_server_spec: Optional server spec for the reflection
                 server.
+            flow_server_spec: Optional server spec for the flow server.
         """
+        self.logger = logger
+        self.model = model
         self.registry = Registry()
         self.registry.default_model = model
 
+        # NOTE: I'm not sure it makes sense to have multiple Genkit class
+        # instances given each one initializes the runtime. Should we add a
+        # check here to ensure we don't reinitialize the runtime if it has
+        # already been initialized?
         if is_dev_environment():
-            runtimes_dir = os.path.join(os.getcwd(), '.genkit/runtimes')
-            server.create_runtime(
-                runtime_dir=runtimes_dir,
+            if working_dir is None:
+                working_dir = os.getcwd()
+            create_runtime(
+                logger=self.logger,
+                working_dir=working_dir,
                 reflection_server_spec=reflection_server_spec,
                 at_exit_fn=os.remove,
             )
-            self.thread = threading.Thread(
-                target=self.start_server,
-                args=(
+
+        coro = self.start(plugins, reflection_server_spec, flow_server_spec)
+        try:
+            asyncio.run(coro)
+        except KeyboardInterrupt:
+            print('KeyboardInterrupt')
+            self.logger.info('Shutting down servers...')
+
+    async def start(
+        self,
+        plugins: list[Plugin],
+        reflection_server_spec: ServerSpec,
+        flow_server_spec: ServerSpec,
+    ) -> None:
+        """Starts all the required servers and initializes all the plugins.
+
+        Args:
+            plugins: The list of plugins to load and initialize.
+            reflection_server_spec: Server host and port information.
+            flow_server_spec: Server host and port information.
+
+        Returns:
+            None
+        """
+        coroutines = [
+            self.initialize_plugins(plugins),
+        ]
+        if is_dev_environment():
+            coroutines.append(
+                run_server_uvicorn(
+                    self.logger,
+                    'reflection server',
+                    make_reflection_app(self.logger, self.registry),
                     reflection_server_spec.host,
                     reflection_server_spec.port,
-                ),
+                )
             )
-            self.thread.start()
+        # TODO: Add flow server coroutine later.
+        await asyncio.gather(*coroutines)
 
+    async def initialize_plugins(self, plugins: list[Plugin]) -> None:
+        """Initialize plugins for the Genkit instance.
+
+        Args:
+            plugins: The list of plugins implementing the Plugin interface.
+
+        Returns:
+            None
+        """
         if not plugins:
-            logger.warning('No plugins provided to Genkit')
+            await self.logger.awarning('No plugins provided to Genkit')
         else:
             for plugin in plugins:
                 if isinstance(plugin, Plugin):
-                    plugin.initialize(registry=self.registry)
+                    # TODO: make this awaitable
+                    await self.logger.adebug(
+                        'Initializing plugin', plugin=plugin
+                    )
+                    await plugin.initialize(registry=self.registry)
                 else:
                     raise ValueError(
                         f'Invalid {plugin=} provided to Genkit: '
                         f'must be of type `genkit.core.plugin_abc.Plugin`'
                     )
-
-    def start_server(self, host: str, port: int) -> None:
-        """Start the HTTP server for handling requests.
-
-        Args:
-            host: The hostname to bind to.
-            port: The port number to listen on.
-        """
-        httpd = HTTPServer(
-            (host, port),
-            make_reflection_server(registry=self.registry),
-        )
-        httpd.serve_forever()
 
     async def generate(
         self,

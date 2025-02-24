@@ -42,7 +42,7 @@ export const start = new Command('start')
       let port: number;
       if (options.port) {
         port = Number(options.port);
-        if (isNaN(port) || port < 0) {
+        if (Number.isNaN(port) || port < 0) {
           logger.error(`"${options.port}" is not a valid port number`);
           return;
         }

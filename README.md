@@ -9,7 +9,8 @@ Learn more in our documentation for [Node.js](https://firebase.google.com/docs/g
 
 ## What can you build with Genkit?
 
-Genkit is a versatile framework, which you can use to build many different types of AI applications. Common use cases include:
+Genkit is a versatile framework, which you can use to build many different types
+of AI applications. Common use cases include:
 
 - **Intelligent agents:** Create agents that understand user requests and perform tasks autonomously, such as personalized travel planning or itinerary generation.
 

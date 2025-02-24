@@ -8,6 +8,7 @@ import json
 import os
 import tempfile
 
+import structlog
 from genkit.veneer import server
 
 
@@ -41,11 +42,13 @@ def test_create_runtime() -> None:
     Verifies that the create_runtime function correctly creates and
     manages runtime metadata files, including cleanup on exit.
     """
+    logger = structlog.get_logger()
+
     with tempfile.TemporaryDirectory() as temp_dir:
         spec = server.ServerSpec(port=3100)
 
         # Test runtime file creation
-        runtime_path = server.create_runtime(temp_dir, spec)
+        runtime_path = server.create_runtime(logger, temp_dir, spec)
         assert runtime_path.exists()
 
         # Verify file content
@@ -58,6 +61,6 @@ def test_create_runtime() -> None:
 
         # Test directory creation
         new_dir = os.path.join(temp_dir, 'new_dir')
-        runtime_path = server.create_runtime(new_dir, spec)
+        runtime_path = server.create_runtime(logger, new_dir, spec)
         assert os.path.exists(new_dir)
         assert runtime_path.exists()

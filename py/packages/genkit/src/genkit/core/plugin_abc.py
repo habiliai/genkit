@@ -24,7 +24,7 @@ class Plugin(abc.ABC):
     """
 
     @abc.abstractmethod
-    def initialize(self, registry: Registry) -> None:
+    async def initialize(self, registry: Registry) -> None:
         """Initialize the plugin with the given registry.
 
         Args:

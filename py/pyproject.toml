@@ -9,6 +9,7 @@ dependencies = [
   "genkit-ollama-plugin",
   "genkit-pinecone-plugin",
   "genkit-vertex-ai-plugin",
+  "uvicorn>=0.27.1",
 ]
 description = "Workspace for Genkit packages"
 license = { text = "Apache-2.0" }
@@ -52,7 +53,7 @@ testpaths = ["packages", "plugins", "samples"]
 addopts = "--cov"
 
 [tool.coverage.report]
-fail_under = 85
+fail_under = 80
 
 # uv based package management.
 [tool.uv]

@@ -25,6 +25,14 @@ from genkit.core.action import (
 )
 
 type ActionName = str
+from genkit.core.action import (
+    Action,
+    ActionKind,
+    create_action_key,
+    parse_action_key,
+)
+
+type ActionName = str
 
 
 class Registry:
@@ -98,6 +106,7 @@ class Registry:
         """
         if kind in self.entries and name in self.entries[kind]:
             return self.entries[kind][name]
+        return None
 
     def lookup_action_by_key(self, key: str) -> Action | None:
         """Look up an action using its combined key string.

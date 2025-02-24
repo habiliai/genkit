@@ -3,7 +3,11 @@
 
 """A hello world sample that just calls some flows."""
 
+from __future__ import annotations
+
+import argparse
 import asyncio
+import os
 from typing import Any
 
 from genkit.ai.generate import generate_action
@@ -24,10 +28,41 @@ from genkit.plugins.vertex_ai import (
 from genkit.veneer.veneer import Genkit
 from pydantic import BaseModel, Field
 
-ai = Genkit(
-    plugins=[VertexAI()],
-    model=vertexai_name(GeminiVersion.GEMINI_1_5_FLASH),
-)
+
+def create_ai() -> Genkit:
+    """Create a Genkit instance.
+
+    Returns:
+        A Genkit instance.
+    """
+    args = parse_args()
+    return Genkit(
+        plugins=[VertexAI()],
+        model=vertexai_name(GeminiVersion.GEMINI_1_5_FLASH),
+        working_dir=args.working_dir,
+    )
+
+
+def parse_args() -> argparse.Namespace:
+    """Parse command line arguments.
+
+    Returns:
+        A parsed argparse.Namespace object.
+    """
+    parser = argparse.ArgumentParser(description='Process some files.')
+    _ = parser.add_argument(
+        '-d',
+        '--directory',
+        default=os.getcwd(),
+        help='Set the working directory.',
+        dest='working_dir',
+    )
+
+    args = parser.parse_args()
+    return args
+
+
+ai = create_ai()
 
 
 class MyInput(BaseModel):

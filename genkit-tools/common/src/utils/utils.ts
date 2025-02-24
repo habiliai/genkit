@@ -117,8 +117,13 @@ export async function detectRuntime(directory: string): Promise<Runtime> {
   for (const file of files) {
     const filePath = path.join(directory, file);
     const stat = await fs.stat(filePath);
-    if (stat.isFile() && (path.extname(file) === '.go' || file === 'go.mod')) {
-      return 'go';
+    if (stat.isFile()) {
+      if (path.extname(file) === '.go' || file === 'go.mod') {
+        return 'go';
+      }
+      if (path.extname(file) === '.py' || file === 'pyproject.toml') {
+        return 'python';
+      }
     }
   }
   try {

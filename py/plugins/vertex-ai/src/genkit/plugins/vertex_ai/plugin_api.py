@@ -56,7 +56,7 @@ class VertexAI(Plugin):
         location = location if location else const.DEFAULT_REGION
         vertexai.init(project=project_id, location=location)
 
-    def initialize(self, registry: Registry) -> None:
+    async def initialize(self, registry: Registry) -> None:
         """Initialize the plugin by registering actions with the registry.
 
         This method registers the Vertex AI model actions with the provided

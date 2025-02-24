@@ -20,6 +20,8 @@ dependencies = [
   "pydantic>=2.10.5",
   "requests>=2.32.3",
   "dotprompt",
+  "asgiref>=3.8.1",
+  "structlog>=25.1.0",
 ]
 description = "Genkit AI Framework"
 license = { text = "Apache-2.0" }

@@ -345,7 +345,7 @@ export class RuntimeManager {
         const fileName = path.basename(filePath);
         if (await checkServerHealth(runtimeInfo.reflectionServerUrl)) {
           if (
-            runtimeInfo.reflectionApiSpecVersion !=
+            runtimeInfo.reflectionApiSpecVersion !==
             GENKIT_REFLECTION_API_SPEC_VERSION
           ) {
             if (
@@ -462,6 +462,6 @@ function isValidRuntimeInfo(data: any): data is RuntimeInfo {
     typeof data.pid === 'number' &&
     typeof data.reflectionServerUrl === 'string' &&
     typeof data.timestamp === 'string' &&
-    !isNaN(Date.parse(data.timestamp))
+    !Number.isNaN(Date.parse(data.timestamp))
   );
 }
