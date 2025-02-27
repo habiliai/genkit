@@ -48,10 +48,15 @@ export async function resolveTelemetryServer(): Promise<string> {
  * Starts the runtime manager and its dependencies.
  */
 export async function startManager(
-  manageHealth?: boolean
+  manageHealth?: boolean,
+  directory?: string
 ): Promise<RuntimeManager> {
   const telemetryServerUrl = await resolveTelemetryServer();
-  const manager = RuntimeManager.create({ telemetryServerUrl, manageHealth });
+  const manager = RuntimeManager.create({ 
+    telemetryServerUrl, 
+    manageHealth,
+    directory 
+  });
   return manager;
 }
 
@@ -59,11 +64,12 @@ export async function startManager(
  * Runs the given function with a runtime manager.
  */
 export async function runWithManager(
-  fn: (manager: RuntimeManager) => Promise<void>
+  fn: (manager: RuntimeManager) => Promise<void>,
+  directory?: string
 ) {
   let manager: RuntimeManager;
   try {
-    manager = await startManager(false); // Don't manage health in this case.
+    manager = await startManager(false, directory); // Don't manage health in this case.
   } catch (e) {
     process.exit(1);
   }

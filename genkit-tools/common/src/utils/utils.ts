@@ -72,16 +72,16 @@ export async function findProjectRoot(): Promise<string> {
 /**
  * Finds the Genkit hidden directory containing runtime state files.
  */
-export async function findRuntimesDir(projectRoot?: string): Promise<string> {
-  const root = projectRoot ?? (await findProjectRoot());
+export async function findRuntimesDir(projectRoot?: string, customDirectory?: string): Promise<string> {
+  const root = customDirectory ?? projectRoot ?? (await findProjectRoot());
   return path.join(root, '.genkit', 'runtimes');
 }
 
 /**
  * Finds the Genkit hidden directory containing server (UI server, telemetry server, etc) state files.
  */
-export async function findServersDir(projectRoot?: string): Promise<string> {
-  const root = projectRoot ?? (await findProjectRoot());
+export async function findServersDir(projectRoot?: string, customDirectory?: string): Promise<string> {
+  const root = customDirectory ?? projectRoot ?? (await findProjectRoot());
   return path.join(root, '.genkit', 'servers');
 }
 

@@ -29,12 +29,15 @@ import {
 } from '@genkit-ai/tools-common/utils';
 import { Command } from 'commander';
 import { runWithManager } from '../utils/manager-utils';
+import * as path from 'path';
+import * as fs from 'fs';
 
 interface EvalRunCliOptions {
   output?: string;
   evaluators?: string;
   force?: boolean;
   outputFormat: string;
+  directory?: string;
 }
 
 /** Command to run evaluation on a dataset. */
@@ -58,8 +61,9 @@ export const evalRun = new Command('eval:run')
     'comma separated list of evaluators to use (by default uses all)'
   )
   .option('--force', 'Automatically accept all interactive prompts')
+  .option('--directory <directory>', 'parent directory for the .genkit/runtimes directory')
   .action(async (dataset: string, options: EvalRunCliOptions) => {
-    await runWithManager(async (manager) => {
+    await runWithManager(async (manager, directory = options.directory) => {
       if (!dataset) {
         throw new Error(
           'No input data passed. Specify input data using [data] argument'
@@ -116,5 +120,5 @@ export const evalRun = new Command('eval:run')
       console.log(
         `Succesfully ran evaluation, with evalId: ${evalRun.key.evalRunId}`
       );
-    });
+    }, options.directory);
   });

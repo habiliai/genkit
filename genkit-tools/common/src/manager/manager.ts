@@ -50,17 +50,23 @@ interface RuntimeManagerOptions {
   telemetryServerUrl?: string;
   /** Whether to clean up unhealthy runtimes. */
   manageHealth?: boolean;
+  /** Custom parent directory for the .genkit/runtimes directory. */
+  directory?: string;
 }
 
 export class RuntimeManager {
   private filenameToRuntimeMap: Record<string, RuntimeInfo> = {};
   private idToFileMap: Record<string, string> = {};
   private eventEmitter = new EventEmitter();
+  private customDirectory?: string;
 
   private constructor(
     readonly telemetryServerUrl?: string,
-    private manageHealth: boolean = true
-  ) {}
+    private manageHealth: boolean = true,
+    directory?: string
+  ) {
+    this.customDirectory = directory;
+  }
 
   /**
    * Creates a new runtime manager.
@@ -68,7 +74,8 @@ export class RuntimeManager {
   static async create(options: RuntimeManagerOptions) {
     const manager = new RuntimeManager(
       options.telemetryServerUrl,
-      options.manageHealth ?? true
+      options.manageHealth ?? true,
+      options.directory
     );
     await manager.setupRuntimesWatcher();
     if (manager.manageHealth) {
@@ -307,7 +314,7 @@ export class RuntimeManager {
    */
   private async setupRuntimesWatcher() {
     try {
-      const runtimesDir = await findRuntimesDir();
+      const runtimesDir = await findRuntimesDir(undefined, this.customDirectory);
       await fs.mkdir(runtimesDir, { recursive: true });
       const watcher = chokidar.watch(runtimesDir, {
         persistent: true,
@@ -439,11 +446,11 @@ export class RuntimeManager {
     const runtime = this.filenameToRuntimeMap[fileName];
     if (runtime) {
       try {
-        const runtimesDir = await findRuntimesDir();
+        const runtimesDir = await findRuntimesDir(undefined, this.customDirectory);
         const runtimeFilePath = path.join(runtimesDir, fileName);
         await fs.unlink(runtimeFilePath);
       } catch (error) {
-        logger.debug(`Failed to delete runtime file: ${error}`);
+        logger.error(`Failed to remove runtime file: ${error}`);
       }
       logger.debug(
         `Removed unhealthy runtime with ID ${runtime.id} from manager.`

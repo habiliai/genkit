@@ -50,3 +50,12 @@ export enum RuntimeEvent {
   ADD = 'add',
   REMOVE = 'remove',
 }
+
+interface RuntimeManagerOptions {
+  /** URL of the telemetry server. */
+  telemetryServerUrl?: string;
+  /** Whether to clean up unhealthy runtimes. */
+  manageHealth?: boolean;
+  /** Custom parent directory for the .genkit/runtimes directory. */
+  directory?: string;
+}
