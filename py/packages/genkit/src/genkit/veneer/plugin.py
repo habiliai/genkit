@@ -8,7 +8,6 @@ It provides a way to initialize and register plugin functionality.
 """
 
 import abc
-from functools import cached_property
 
 from genkit.core.registry import ActionKind
 from genkit.veneer.registry import GenkitRegistry
@@ -20,9 +19,6 @@ class Plugin(abc.ABC):
     This class defines the interface that all plugins must implement.  Plugins
     provide a way to extend functionality by registering new actions, models, or
     other capabilities.
-
-    Attributes:
-        registry: Registry for plugin functionality.
     """
 
     def plugin_name(self):
@@ -52,7 +48,7 @@ class Plugin(abc.ABC):
         """Initialize the plugin with the given registry.
 
         Args:
-            registry: Registry to register plugin functionality.
+            ai: The Genkit registry.
 
         Returns:
             None, initialization is done by side-effect on the registry.
