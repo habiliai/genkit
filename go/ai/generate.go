@@ -392,31 +392,31 @@ func handleToolRequest(ctx context.Context, req *GenerateRequest, resp *Generate
   if msg == nil || len(msg.Content) == 0 {
     return nil, nil
   }
-  part := msg.Content[0]
-  if !part.IsToolRequest() {
-    return nil, nil
-  }
-
-  toolReq := part.ToolRequest
-  tool := LookupTool(toolReq.Name)
-  if tool == nil {
-    return nil, fmt.Errorf("tool %v not found", toolReq.Name)
-  }
-  to, err := tool.RunRaw(ctx, toolReq.Input)
-  if err != nil {
-    return nil, err
-  }
 
   toolResp := &Message{
-    Content: []*Part{
-      NewToolResponsePart(&ToolResponse{
-        Name: toolReq.Name,
-        Output: map[string]any{
-          "response": to,
-        },
-      }),
-    },
     Role: RoleTool,
+  }
+  for _, part := range msg.Content {
+    if !part.IsToolRequest() {
+      return nil, nil
+    }
+
+    toolReq := part.ToolRequest
+    tool := LookupTool(toolReq.Name)
+    if tool == nil {
+      return nil, fmt.Errorf("tool %v not found", toolReq.Name)
+    }
+    to, err := tool.RunRaw(ctx, toolReq.Input)
+    if err != nil {
+      return nil, err
+    }
+
+    toolResp.Content = append(toolResp.Content, NewToolResponsePart(&ToolResponse{
+      Name: toolReq.Name,
+      Output: map[string]any{
+        "response": to,
+      },
+    }))
   }
 
   // Copy the GenerateRequest rather than modifying it.
