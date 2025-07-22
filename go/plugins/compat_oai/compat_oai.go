@@ -109,6 +109,7 @@ func (o *OpenAICompatible) DefineModel(provider, id string, opts ai.ModelOptions
 	) (*ai.ModelResponse, error) {
 		// Configure the response generator with input
 		generator := NewModelGenerator(o.client, modelName).WithMessages(input.Messages).WithConfig(input.Config).WithTools(input.Tools)
+		generator = generator.WithOutputConfig(input.Output)
 
 		// Generate response
 		resp, err := generator.Generate(ctx, cb)

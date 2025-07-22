@@ -36,12 +36,11 @@ func mapToStruct(m map[string]any, v any) error {
 
 // ModelGenerator handles OpenAI generation requests
 type ModelGenerator struct {
-	client     *openai.Client
-	modelName  string
-	request    *openai.ChatCompletionNewParams
-	messages   []openai.ChatCompletionMessageParamUnion
-	tools      []openai.ChatCompletionToolParam
-	toolChoice openai.ChatCompletionToolChoiceOptionUnionParam
+	client    *openai.Client
+	modelName string
+	request   *openai.ChatCompletionNewParams
+	messages  []openai.ChatCompletionMessageParamUnion
+	tools     []openai.ChatCompletionToolParam
 	// Store any errors that occur during building
 	err error
 }
@@ -134,6 +133,39 @@ func (g *ModelGenerator) WithMessages(messages []*ai.Message) *ModelGenerator {
 
 	}
 	g.messages = oaiMessages
+	return g
+}
+
+func (g *ModelGenerator) WithOutputConfig(output *ai.ModelOutputConfig) *ModelGenerator {
+	if output == nil {
+		return g
+	}
+
+	switch output.Format {
+	case ai.OutputFormatJSON:
+		if output.Constrained && output.Schema != nil {
+			output.Schema["additionalProperties"] = false
+			g.request.ResponseFormat = openai.ChatCompletionNewParamsResponseFormatUnion{
+				OfJSONSchema: &openai.ResponseFormatJSONSchemaParam{
+					JSONSchema: openai.ResponseFormatJSONSchemaJSONSchemaParam{
+						Name:        "output",
+						Schema:      output.Schema,
+						Description: openai.String("The output should be a valid JSON object."),
+						Strict:      openai.Bool(true),
+					},
+				},
+			}
+		} else {
+			g.request.ResponseFormat = openai.ChatCompletionNewParamsResponseFormatUnion{
+				OfJSONObject: &openai.ResponseFormatJSONObjectParam{},
+			}
+		}
+	case ai.OutputFormatText:
+		g.request.ResponseFormat = openai.ChatCompletionNewParamsResponseFormatUnion{
+			OfText: &openai.ResponseFormatTextParam{},
+		}
+	}
+
 	return g
 }
 

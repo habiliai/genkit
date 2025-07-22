@@ -252,3 +252,108 @@ func TestWithConfig(t *testing.T) {
 		})
 	}
 }
+
+func TestWithOutputConfig(t *testing.T) {
+	tests := []struct {
+		name     string
+		output   *ai.ModelOutputConfig
+		validate func(*testing.T, *openai.ChatCompletionNewParams)
+	}{
+		{
+			name:   "nil output config",
+			output: nil,
+			validate: func(t *testing.T, request *openai.ChatCompletionNewParams) {
+				// For nil output config, we expect ResponseFormat to have not set
+				assert.Nil(t, request.ResponseFormat.OfText)
+				assert.Nil(t, request.ResponseFormat.OfJSONObject)
+				assert.Nil(t, request.ResponseFormat.OfJSONSchema)
+			},
+		},
+		{
+			name: "text format should be set to text",
+			output: &ai.ModelOutputConfig{
+				Format: "text",
+			},
+			validate: func(t *testing.T, request *openai.ChatCompletionNewParams) {
+				// Non-JSON formats should be ignored, so ResponseFormat should be set to text
+				assert.NotNil(t, request.ResponseFormat.OfText)
+				assert.Nil(t, request.ResponseFormat.OfJSONObject)
+				assert.Nil(t, request.ResponseFormat.OfJSONSchema)
+			},
+		},
+		{
+			name: "JSON format without constraints",
+			output: &ai.ModelOutputConfig{
+				Format:      "json",
+				Constrained: false,
+			},
+			validate: func(t *testing.T, request *openai.ChatCompletionNewParams) {
+				// Should set ResponseFormat to JSON object
+				assert.Nil(t, request.ResponseFormat.OfText)
+				assert.NotNil(t, request.ResponseFormat.OfJSONObject)
+				assert.Nil(t, request.ResponseFormat.OfJSONSchema)
+			},
+		},
+		{
+			name: "JSON format with constraints and schema",
+			output: &ai.ModelOutputConfig{
+				Format:      "json",
+				Constrained: true,
+				Schema: map[string]any{
+					"type": "object",
+					"properties": map[string]any{
+						"name": map[string]any{
+							"type": "string",
+						},
+						"age": map[string]any{
+							"type": "integer",
+						},
+					},
+					"required": []string{"name", "age"},
+				},
+			},
+			validate: func(t *testing.T, request *openai.ChatCompletionNewParams) {
+				// Should set ResponseFormat to JSON schema
+				assert.Nil(t, request.ResponseFormat.OfText)
+				assert.Nil(t, request.ResponseFormat.OfJSONObject)
+				assert.NotNil(t, request.ResponseFormat.OfJSONSchema)
+
+				// Verify JSON schema parameters
+				jsonSchema := request.ResponseFormat.OfJSONSchema
+				assert.Equal(t, "output", jsonSchema.JSONSchema.Name)
+				assert.Equal(t, openai.String("The output should be a valid JSON object."), jsonSchema.JSONSchema.Description)
+
+				// Verify schema content
+				schemaData, ok := jsonSchema.JSONSchema.Schema.(map[string]any)
+				assert.True(t, ok)
+				assert.Equal(t, "object", schemaData["type"])
+			},
+		},
+	}
+
+	// define simple messages for testing
+	messages := []*ai.Message{
+		{
+			Role: ai.RoleUser,
+			Content: []*ai.Part{
+				ai.NewTextPart("Generate a JSON response"),
+			},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			generator := setupTestClient(t)
+			result, err := generator.WithMessages(messages).WithOutputConfig(tt.output).Generate(context.Background(), nil)
+
+			// validate that the response was successful
+			assert.NoError(t, err)
+			assert.NotNil(t, result)
+
+			// validate the input request was transformed correctly
+			if tt.validate != nil {
+				tt.validate(t, generator.GetRequest())
+			}
+		})
+	}
+}
