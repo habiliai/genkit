@@ -122,6 +122,38 @@ type OpenAIConfig struct {
 	StopSequences []string `json:"stop_sequences,omitempty"`
 }
 
+func (g *ModelGenerator) WithOutputConfig(output *ai.ModelOutputConfig) *ModelGenerator {
+	if output == nil {
+		return g
+	}
+
+	switch output.Format {
+	case ai.OutputFormatJSON:
+		if output.Constrained && output.Schema != nil {
+			output.Schema["additionalProperties"] = false
+			g.request.ResponseFormat = openai.F[openai.ChatCompletionNewParamsResponseFormatUnion](openai.ResponseFormatJSONSchemaParam{
+				Type: openai.F(openai.ResponseFormatJSONSchemaTypeJSONSchema),
+				JSONSchema: openai.F(openai.ResponseFormatJSONSchemaJSONSchemaParam{
+					Name:        openai.F("output"),
+					Schema:      openai.F[any](output.Schema),
+					Description: openai.F("The output should be a valid JSON object."),
+					Strict:      openai.F(true),
+				}),
+			})
+		} else {
+			g.request.ResponseFormat = openai.F[openai.ChatCompletionNewParamsResponseFormatUnion](openai.ResponseFormatJSONObjectParam{
+				Type: openai.F(openai.ResponseFormatJSONObjectTypeJSONObject),
+			})
+		}
+	default:
+		g.request.ResponseFormat = openai.F[openai.ChatCompletionNewParamsResponseFormatUnion](openai.ResponseFormatTextParam{
+			Type: openai.F(openai.ResponseFormatTextTypeText),
+		})
+	}
+
+	return g
+}
+
 // WithConfig adds configuration parameters from the model request
 // see https://platform.openai.com/docs/api-reference/responses/create
 // for more details on openai's request fields
